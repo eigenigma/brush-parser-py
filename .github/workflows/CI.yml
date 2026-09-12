@@ -151,7 +151,7 @@ jobs:
     steps:
       # Matches `rust-version` in Cargo.toml; the sdist carries no
       # rust-toolchain.toml, so this toolchain is the one that builds it.
-      - uses: dtolnay/rust-toolchain@1.88
+      - uses: dtolnay/rust-toolchain@1.120
       - uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.12"
