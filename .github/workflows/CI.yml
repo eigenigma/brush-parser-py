@@ -36,7 +36,7 @@ jobs:
       # on PATH; setup-python pins that to the declared 3.12 floor with a
       # shared libpython and its LD_LIBRARY_PATH, instead of whichever
       # interpreter the runner image exposes.
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - uses: astral-sh/setup-uv@v7
@@ -57,7 +57,7 @@ jobs:
         target: [x86_64, aarch64]
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - name: Build wheels
@@ -77,7 +77,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - name: Build wheels
