@@ -1,0 +1,140 @@
+[project]
+name = "brush-parser-py"
+description = "Python binding for the brush-parser bash parser"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "WindFade" }]
+requires-python = ">=3.12"
+dependencies = []
+dynamic = ["version"]
+keywords = ["bash", "shell", "parser", "ast", "brush", "pyo3"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Rust",
+    "Topic :: Software Development :: Interpreters",
+    "Typing :: Typed",
+]
+
+[project.urls]
+Homepage = "https://github.com/eigenigma/brush-parser-py"
+Repository = "https://github.com/eigenigma/brush-parser-py"
+Issues = "https://github.com/eigenigma/brush-parser-py/issues"
+Changelog = "https://github.com/eigenigma/brush-parser-py/blob/main/CHANGELOG.md"
+Upstream = "https://github.com/reubeno/brush"
+
+[dependency-groups]
+dev = [
+    "mypy>=1.19",
+    "pytest>=9.0",
+    "ruff>=0.16",
+    "ty>=0.0.80",
+]
+
+[build-system]
+requires = ["maturin>=1.15,<2.0"]
+build-backend = "maturin"
+
+[tool.maturin]
+module-name = "brush_parser._core"
+python-packages = ["brush_parser"]
+python-source = "src"
+features = ["pyo3/abi3-py312"]
+
+# The settings `maturin generate-ci github` reads; the tracked
+# .github/workflows/CI.yml is maintained by hand.
+[tool.maturin.generate-ci.github]
+trusted-publishing = true
+publishing-environment = "pypi"
+
+[tool.maturin.generate-ci.github.linux]
+targets = ["x86_64", "aarch64"]
+
+[tool.maturin.generate-ci.github.macos]
+targets = ["aarch64"]
+
+[tool.uv]
+cache-keys = [
+    { file = "pyproject.toml" },
+    { file = "Cargo.toml" },
+    { file = "Cargo.lock" },
+    { file = "src/**/*.rs" },
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    # Conflicts with ruff formatter
+    # See: https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules
+    "COM812", # missing-trailing-comma
+    "COM819", # prohibited-trailing-comma
+    "D206",   # docstring-tab-indentation
+    "D300",   # triple-single-quotes
+    "E111",   # indentation-with-invalid-multiple
+    "E114",   # indentation-with-invalid-multiple-comment
+    "E117",   # over-indented
+    "ISC001", # single-line-implicit-string-concatenation
+    "ISC002", # multi-line-implicit-string-concatenation
+    "Q000",   # bad-quotes-inline-string
+    "Q001",   # bad-quotes-multiline-string
+    "Q002",   # bad-quotes-docstring
+    "Q003",   # avoidable-escaped-quote
+    "W191",   # tab-indentation
+
+    # Copyright headers
+    "CPY001", # Missing copyright notice - the LICENSE file covers the package
+
+    # Docstring style
+    "D203", # one-blank-line-before-class (conflicts with D211)
+    "D213", # multi-line-summary-second-line (conflicts with D212)
+
+    # Exception messages - too pedantic
+    "EM101",  # Exception must not use a string literal
+    "EM102",  # Exception must not use an f-string literal
+    "TRY003", # Avoid specifying long messages outside the exception class
+
+    # Boolean keyword-only options mirror brush's ParserOptions
+    "FBT001", # Boolean-typed positional argument in function definition
+    "FBT002", # Boolean default positional argument in function definition
+
+    # Pylint rules - too strict for this codebase
+    "PLR2004", # magic-value-comparison - we use inline constants
+
+    # Manual review - ruff lacks info severity, so we check these manually
+    "ANN401",  # Dynamically typed expressions (typing.Any)
+    "PLC0415", # import-outside-top-level
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*.py" = [
+    "ANN001", # Missing type annotation for function argument
+    "ANN201", # Missing return type annotation for public function
+    "ANN202", # Missing return type annotation for private function
+    "ARG",    # Unused function args - fixtures are functionally relevant
+    "D1",     # Missing docstring - test names carry the intent
+    "S101",   # Use of assert - pytest assertions
+    "S603",   # subprocess-without-shell-equals-true - we control inputs
+    "S607",   # start-process-with-partial-path - cargo and python on PATH
+    "SLF001", # Private member accessed - tests reach into _core
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
+skip-magic-trailing-comma = false

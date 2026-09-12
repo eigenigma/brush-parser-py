@@ -1,0 +1,30 @@
+[package]
+name = "brush-parser-py"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.88"
+description = "Python binding for the brush-parser bash parser"
+license = "MIT"
+repository = "https://github.com/eigenigma/brush-parser-py"
+publish = false
+# The sdist must not override the installing user's toolchain; `rust-version`
+# above is the floor it needs.
+exclude = ["rust-toolchain.toml"]
+
+[lib]
+name = "_core"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+brush-parser = "=0.4.0"
+pyo3 = "0.29"
+
+[lints.rust]
+missing_docs = "deny"
+unsafe_code = "deny"
+
+[lints.clippy]
+all = { level = "deny", priority = -1 }
+expect_used = "deny"
+panic = "deny"
+unwrap_used = "deny"

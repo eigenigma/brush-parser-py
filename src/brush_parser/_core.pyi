@@ -1,0 +1,191 @@
+from typing import Final
+
+from ._ast_clauses import (
+    ArithmeticForClauseCommand,
+    CaseClauseCommand,
+    CaseItem,
+    CaseItemPostAction,
+    ElseClause,
+    ForClauseCommand,
+    IfClauseCommand,
+    WhileOrUntilClauseCommand,
+)
+from ._ast_commands import (
+    Assignment,
+    AssignmentName,
+    AssignmentValue,
+    Command,
+    CommandPrefix,
+    CommandPrefixOrSuffixItem,
+    CommandSuffix,
+    ProcessSubstitutionKind,
+    SimpleCommand,
+    UnexpandedArithmeticExpr,
+    Word,
+)
+from ._ast_compound import (
+    ArithmeticCommand,
+    BraceGroupCommand,
+    CompoundCommand,
+    CoprocessCommand,
+    DoGroupCommand,
+    FunctionBody,
+    FunctionDefinition,
+    SubshellCommand,
+)
+from ._ast_extended_test import (
+    BinaryPredicate,
+    ExtendedTestExpr,
+    ExtendedTestExprCommand,
+    UnaryPredicate,
+)
+from ._ast_lists import (
+    AndOr,
+    AndOrList,
+    CompoundList,
+    CompoundListItem,
+    Pipeline,
+    PipelineTimed,
+    Program,
+    SeparatorOperator,
+)
+from ._ast_redirects import (
+    IoFileRedirectKind,
+    IoFileRedirectTarget,
+    IoHereDocument,
+    IoRedirect,
+    RedirectList,
+)
+from ._errors import ParseError, WordParseError
+from ._source import SourcePosition, SourceSpan
+from ._word_expressions import ParameterExpr
+from ._word_parameters import (
+    Parameter,
+    ParameterTestType,
+    ParameterTransformOp,
+    SpecialParameter,
+    SubstringMatchKind,
+)
+from ._word_pieces import (
+    BraceExpressionMember,
+    BraceExpressionOrText,
+    TildeExpr,
+    WordPiece,
+    WordPieceWithSource,
+)
+
+__all__ = [
+    "BRUSH_PARSER_VERSION",
+    "AndOr",
+    "AndOrList",
+    "ArithmeticCommand",
+    "ArithmeticForClauseCommand",
+    "Assignment",
+    "AssignmentName",
+    "AssignmentValue",
+    "BinaryPredicate",
+    "BraceExpressionMember",
+    "BraceExpressionOrText",
+    "BraceGroupCommand",
+    "CaseClauseCommand",
+    "CaseItem",
+    "CaseItemPostAction",
+    "Command",
+    "CommandPrefix",
+    "CommandPrefixOrSuffixItem",
+    "CommandSuffix",
+    "CompoundCommand",
+    "CompoundList",
+    "CompoundListItem",
+    "CoprocessCommand",
+    "DoGroupCommand",
+    "ElseClause",
+    "ExtendedTestExpr",
+    "ExtendedTestExprCommand",
+    "ForClauseCommand",
+    "FunctionBody",
+    "FunctionDefinition",
+    "IfClauseCommand",
+    "IoFileRedirectKind",
+    "IoFileRedirectTarget",
+    "IoHereDocument",
+    "IoRedirect",
+    "Parameter",
+    "ParameterExpr",
+    "ParameterTestType",
+    "ParameterTransformOp",
+    "ParseError",
+    "Pipeline",
+    "PipelineTimed",
+    "ProcessSubstitutionKind",
+    "Program",
+    "RedirectList",
+    "SeparatorOperator",
+    "SimpleCommand",
+    "SourcePosition",
+    "SourceSpan",
+    "SpecialParameter",
+    "SubshellCommand",
+    "SubstringMatchKind",
+    "TildeExpr",
+    "UnaryPredicate",
+    "UnexpandedArithmeticExpr",
+    "WhileOrUntilClauseCommand",
+    "Word",
+    "WordParseError",
+    "WordPiece",
+    "WordPieceWithSource",
+    "parse_brace_expansions",
+    "parse_heredoc",
+    "parse_parameter",
+    "parse_program",
+    "parse_word",
+]
+
+BRUSH_PARSER_VERSION: Final[str]
+
+def parse_program(
+    text: str,
+    *,
+    enable_extended_globbing: bool = True,
+    posix_mode: bool = False,
+    sh_mode: bool = False,
+    tilde_expansion_at_word_start: bool = True,
+    tilde_expansion_after_colon: bool = False,
+) -> Program: ...
+def parse_word(
+    word: str,
+    *,
+    enable_extended_globbing: bool = True,
+    posix_mode: bool = False,
+    sh_mode: bool = False,
+    tilde_expansion_at_word_start: bool = True,
+    tilde_expansion_after_colon: bool = False,
+) -> tuple[WordPieceWithSource, ...]: ...
+def parse_heredoc(
+    word: str,
+    *,
+    enable_extended_globbing: bool = True,
+    posix_mode: bool = False,
+    sh_mode: bool = False,
+    tilde_expansion_at_word_start: bool = True,
+    tilde_expansion_after_colon: bool = False,
+) -> tuple[WordPieceWithSource, ...]: ...
+def parse_parameter(
+    word: str,
+    *,
+    enable_extended_globbing: bool = True,
+    posix_mode: bool = False,
+    sh_mode: bool = False,
+    tilde_expansion_at_word_start: bool = True,
+    tilde_expansion_after_colon: bool = False,
+) -> Parameter: ...
+def parse_brace_expansions(
+    word: str,
+    *,
+    enable_extended_globbing: bool = True,
+    posix_mode: bool = False,
+    sh_mode: bool = False,
+    tilde_expansion_at_word_start: bool = True,
+    tilde_expansion_after_colon: bool = False,
+) -> tuple[BraceExpressionOrText, ...] | None: ...

@@ -1,0 +1,190 @@
+# Lints, tests, builds and publishes the package. The wheels are abi3, so one
+# build per platform covers every supported interpreter and no free-threaded
+# (3.14t) wheel exists to build. Top-level `permissions` stay at `contents:
+# read` because nothing is uploaded to a GitHub release. The checks job runs
+# the development gate README lists; the test job installs the built wheel
+# into an environment outside the checkout; the sdist-build job compiles on
+# the declared MSRV; the release job runs only for `v*` tags and publishes
+# through PyPI trusted publishing, so no token is stored.
+# `[tool.maturin.generate-ci.github]` in pyproject.toml holds the settings
+# `maturin generate-ci github` reads.
+
+name: CI
+
+on:
+  push:
+    branches:
+      - "**"
+    tags:
+      - "v*"
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Lint, type-check and Rust tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      # `cargo test` embeds Python, so pyo3 links against the first `python3`
+      # on PATH; setup-python pins that to the declared 3.12 floor with a
+      # shared libpython and its LD_LIBRARY_PATH, instead of whichever
+      # interpreter the runner image exposes.
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.12"
+      - run: cargo fmt --all -- --check
+      - run: cargo clippy --all-targets -- -D warnings
+      - run: cargo test
+      - run: uv sync --locked
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run ty check .
+
+  linux:
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        target: [x86_64, aarch64]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Build wheels
+        uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.target }}
+          args: --release --out dist
+          sccache: ${{ !startsWith(github.ref, 'refs/tags/') }}
+          manylinux: auto
+      - name: Upload wheels
+        uses: actions/upload-artifact@v6
+        with:
+          name: wheels-linux-${{ matrix.target }}
+          path: dist
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Build wheels
+        uses: PyO3/maturin-action@v1
+        with:
+          target: aarch64
+          args: --release --out dist
+          sccache: ${{ !startsWith(github.ref, 'refs/tags/') }}
+      - name: Upload wheels
+        uses: actions/upload-artifact@v6
+        with:
+          name: wheels-macos-aarch64
+          path: dist
+
+  sdist:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Build sdist
+        uses: PyO3/maturin-action@v1
+        with:
+          command: sdist
+          args: --out dist
+      - name: Upload sdist
+        uses: actions/upload-artifact@v6
+        with:
+          name: wheels-sdist
+          path: dist
+
+  test:
+    name: Test installed wheel
+    needs: [linux, macos]
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, macos-latest]
+        python-version: ["3.12", "3.13", "3.14"]
+        include:
+          - runner: ubuntu-24.04
+            wheels: wheels-linux-x86_64
+          - runner: macos-latest
+            wheels: wheels-macos-aarch64
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: actions/download-artifact@v7
+        with:
+          name: ${{ matrix.wheels }}
+          path: dist
+      # `uv run --no-project` builds an environment in uv's cache, outside the
+      # checkout, from the wheel alone; the checkout only supplies the tests.
+      - name: Run the test suite against the installed wheel
+        run: >-
+          uv run --no-project --python ${{ matrix.python-version }}
+          --with dist/*.whl --with pytest --with mypy
+          -m pytest -q
+      - name: Check the stubs against the installed wheel
+        run: >-
+          uv run --no-project --python ${{ matrix.python-version }}
+          --with dist/*.whl --with mypy
+          -m mypy.stubtest brush_parser._core
+
+  sdist-build:
+    name: Build wheel from sdist on the declared MSRV
+    needs: [sdist]
+    runs-on: ubuntu-24.04
+    steps:
+      # Matches `rust-version` in Cargo.toml; the sdist carries no
+      # rust-toolchain.toml, so this toolchain is the one that builds it.
+      - uses: dtolnay/rust-toolchain@1.88
+      - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.12"
+      - uses: actions/download-artifact@v7
+        with:
+          name: wheels-sdist
+          path: dist
+      - name: Build a wheel from the sdist alone
+        run: uv build --wheel --no-sources --out-dir from-sdist dist/*.tar.gz
+      - name: Import the package from that wheel
+        run: >-
+          uv run --no-project --with from-sdist/*.whl
+          python -c "import brush_parser; print(brush_parser.BRUSH_PARSER_VERSION)"
+
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+    needs: [checks, linux, macos, sdist, test, sdist-build]
+    environment: pypi
+    permissions:
+      # Trusted publishing (OIDC) and artifact signing
+      id-token: write
+      # Used to generate artifact attestation
+      attestations: write
+      contents: read
+    steps:
+      - uses: actions/download-artifact@v7
+      - name: Generate artifact attestation
+        uses: actions/attest@v4
+        with:
+          subject-path: "wheels-*/*"
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+      - name: Publish to PyPI
+        run: uv publish --trusted-publishing always 'wheels-*/*'
