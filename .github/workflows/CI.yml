@@ -13,8 +13,11 @@ name: CI
 
 on:
   push:
+    # Dependabot opens a PR for every branch it pushes, so `pull_request`
+    # already covers those; a push run on top would only duplicate it.
     branches:
       - "**"
+      - "!dependabot/**"
     tags:
       - "v*"
   pull_request:
